@@ -23,8 +23,8 @@ echo "Backing up $backup_guacamole, $backup_webapps, $backup_tomcat 'server.xml 
 date
 echo
 
-cp -r $backup_guacamole $dest/$file/guacamole
-cp -r $backup_tomcat $dest/$file/tomcat
+cp -rp $backup_guacamole $dest/$file/guacamole
+cp -rp $backup_tomcat $dest/$file/tomcat
 
 echo
 echo "Backup finished"
