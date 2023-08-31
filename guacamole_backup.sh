@@ -41,7 +41,7 @@ echo "Begining mysql backup ......"
 date
 sleep 2
 
-mysqldump -v -u root --password=ilovebeth1995! guacamole_db > $dest/$file/database/guacamole_db.sql
+mysqldump -v -u root --password=mysqcurepassword! guacamole_db > $dest/$file/database/guacamole_db.sql
 if [ $? -eq 0 ]; then
   echo "$day - Mysql database backup was successful" | tee -a "$logfile"
 else
