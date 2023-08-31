@@ -12,7 +12,6 @@ backup_tomcat="/var/lib/tomcat9/webapps/ /var/lib/tomcat9/conf/server.xml"
 #####################################################
 #Declare some variables
 dest="/backup"
-#status=$?
 day=$(date '+%Y-%m-%d-%-H%M')
 hostname=$(hostname -s)
 file="$hostname-$day"
