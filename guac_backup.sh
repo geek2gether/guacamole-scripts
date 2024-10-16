@@ -19,7 +19,7 @@ hostname=$(hostname -s)
 file="$hostname-$day"
 logfile="$dest/backup.log"
 mysql_user="root"
-mysql_password="${MYSQL_PASSWORD:-mysecurepassword}" # Use env var if available
+mysql_password="${MYSQL_PASSWORD:-mysecurepassword}" 
 database_name="guacamole_db"
 
 # Create necessary backup folder, including the /backup directory
