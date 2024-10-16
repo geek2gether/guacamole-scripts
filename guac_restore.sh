@@ -1,71 +1,59 @@
 #!/bin/bash
 ####################################
 #
-# Restore Guacamole and Tomcat.
+# Backup Guacamole and Tomcat.
 #
 ####################################
 
 #####################################################
-# Guacamole and Tomcat restore paths
-restore_guacamole="/etc/guacamole/"
-restore_tomcat_webapps="/var/lib/tomcat9/webapps/"
-restore_tomcat_conf="/var/lib/tomcat9/conf/server.xml"
+# Guacamole Paths to Backup
+backup_guacamole="/etc/guacamole/"
+backup_tomcat_webapps="/var/lib/tomcat9/webapps/"
+backup_tomcat_conf="/var/lib/tomcat9/conf/server.xml"
 #####################################################
 
 # Declare some variables
-backup_dir="/backup"
-backup_file="$1"  # Passed as an argument
-logfile="$backup_dir/restore.log"
+dest="/backup"
+day=$(date '+%Y-%m-%d-%H%M')
+hostname=$(hostname -s)
+file="$hostname-$day"
+logfile="$dest/backup.log"
 mysql_user="root"
-mysql_password="${MYSQL_PASSWORD:-mysecurepassword}"  # Use environment variable if available
+mysql_password="${MYSQL_PASSWORD:-mysecurepassword}" # Use env var if available
 database_name="guacamole_db"
 
-# Check if the backup file exists
-if [ -z "$backup_file" ]; then
-    echo "Usage: $0 <backup-file.tar.gz>" | tee -a "$logfile"
-    exit 1
+# Create necessary backup folder, including the /backup directory
+mkdir -p "$dest/$file/database" "$dest/$file/tomcat"
+
+# Log rotation: Keep only last 7 log files
+if [ -d "$dest" ]; then
+    find "$dest"/*.log -mtime +7 -exec rm {} \;
 fi
 
-if [ ! -f "$backup_dir/$backup_file" ]; then
-    echo "Backup file $backup_file not found in $backup_dir" | tee -a "$logfile"
-    exit 1
-fi
+# Backup guacamole and Tomcat files
+echo "[$(date)] Backing up $backup_guacamole and Tomcat files to be archived" | tee -a "$logfile"
+cp -ra $backup_guacamole "$dest/$file/guacamole" || echo "[$(date)] Error copying $backup_guacamole" | tee -a "$logfile"
+cp -ra $backup_tomcat_webapps "$dest/$file/tomcat/webapps" || echo "[$(date)] Error copying $backup_tomcat_webapps" | tee -a "$logfile"
+cp -ra $backup_tomcat_conf "$dest/$file/tomcat/server.xml" || echo "[$(date)] Error copying $backup_tomcat_conf" | tee -a "$logfile"
 
-# Extract the backup file
-echo "[$(date)] Extracting backup file $backup_file ..." | tee -a "$logfile"
-tar -xzf "$backup_dir/$backup_file" -C "$backup_dir"
-if [ $? -ne 0 ]; then
-    echo "[$(date)] Error extracting backup file $backup_file" | tee -a "$logfile"
-    exit 1
-fi
-
-# Find the extracted folder (assuming it's named based on hostname and timestamp)
-extracted_folder=$(basename "$backup_file" .tar.gz)
-
-# Restore Guacamole files
-echo "[$(date)] Restoring Guacamole files to $restore_guacamole" | tee -a "$logfile"
-cp -ra "$backup_dir/$extracted_folder/guacamole/"* "$restore_guacamole" || echo "[$(date)] Error restoring Guacamole files" | tee -a "$logfile"
-
-# Restore Tomcat files
-echo "[$(date)] Restoring Tomcat webapps to $restore_tomcat_webapps" | tee -a "$logfile"
-cp -ra "$backup_dir/$extracted_folder/tomcat/webapps/"* "$restore_tomcat_webapps" || echo "[$(date)] Error restoring Tomcat webapps" | tee -a "$logfile"
-
-echo "[$(date)] Restoring Tomcat server.xml to $restore_tomcat_conf" | tee -a "$logfile"
-cp -ra "$backup_dir/$extracted_folder/tomcat/server.xml" "$restore_tomcat_conf" || echo "[$(date)] Error restoring Tomcat server.xml" | tee -a "$logfile"
-
-# Restore MySQL Database
-echo "[$(date)] Restoring MySQL database $database_name ..." | tee -a "$logfile"
-mysql -u "$mysql_user" --password="$mysql_password" "$database_name" < "$backup_dir/$extracted_folder/database/guacamole_db.sql"
+# Backup MySQL Database
+echo "[$(date)] Beginning MySQL backup ..." | tee -a "$logfile"
+mysqldump -u "$mysql_user" --password="$mysql_password" "$database_name" > "$dest/$file/database/guacamole_db.sql"
 
 if [ $? -eq 0 ]; then
-  echo "[$(date)] MySQL database restore was successful" | tee -a "$logfile"
+  echo "[$(date)] MySQL database backup was successful" | tee -a "$logfile"
 else
-  echo "[$(date)] MySQL database restore failed" | tee -a "$logfile"
+  echo "[$(date)] MySQL database backup failed" | tee -a "$logfile"
 fi
 
-#restart tomcat and mysql
-sleep 10
-echo "[$(date)] Restarting services [Tomcat9 and Mysql]..." | tee -a "$logfile"a
-systemctl restart tomcat9 mysql
+# Compress all backup files into one tar.gz file
+echo "[$(date)] Compressing backup files into $file.tar.gz ..." | tee -a "$logfile"
+tar -czf "$dest/$file.tar.gz" -C "$dest" "$file"
 
-echo "[$(date)] Restore process completed" | tee -a "$logfile"
+# Remove the uncompressed backup folder after compression
+rm -rf "$dest/$file"
+
+# List the backup file to verify
+ls -lh "$dest/$file.tar.gz" | tee -a "$logfile"
+
+echo "[$(date)] Backup script completed" | tee -a "$logfile"
