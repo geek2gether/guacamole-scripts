@@ -63,4 +63,9 @@ else
   echo "[$(date)] MySQL database restore failed" | tee -a "$logfile"
 fi
 
+#restart tomcat and mysql
+sleep 10
+echo "[$(date)] Restarting services [Tomcat9 and Mysql]..." | tee -a "$logfile"a
+systemctl restart tomcat9 mysql
+
 echo "[$(date)] Restore process completed" | tee -a "$logfile"
