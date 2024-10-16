@@ -17,7 +17,7 @@ backup_dir="/backup"
 backup_file="$1"  # Passed as an argument
 logfile="$backup_dir/restore.log"
 mysql_user="root"
-mysql_password="${MYSQL_PASSWORD:-mysecurepassword}"  # Use environment variable if available
+mysql_password="${MYSQL_PASSWORD:-mysecurepassword}"  
 database_name="guacamole_db"
 
 # Check if the backup file exists
